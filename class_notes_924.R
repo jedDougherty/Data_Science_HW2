@@ -24,7 +24,6 @@ myFunc <-function(x)
 {
   
 }
-}
 resultDF <- ldply(results, myfunc)
 resultDFArts <- "Arts"
 view(resultDF)
