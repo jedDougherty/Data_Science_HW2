@@ -23,6 +23,16 @@ rank <- "newest"
 #Set up query output table.
 articles <- list()
 
+#Check for missing bodys in articles and hold a fixed, complete row. 
+addBody <- c("body",NA)
+fixRow <- function(x) {
+    inAdeq <- ldply(x[[rowNum]])
+    rePlace <- t(rbind(addBody, inAdeq))
+    toList <- rePlace[-1,1:3]
+    names(toList) <- c("body","title","url")
+    return(toList)
+}
+
 #Loop to insert facets.
 query <- foreach(i= 1:length(facets))  %do%
   sprintf("nytd_section_facet%%3A%%5B%s%%5D", facets[[i]])
@@ -39,6 +49,11 @@ for(j in 1:5){
                   sep="")
     data <- readLines(uri, warn="F") # get them
     trnslt  <- fromJSON(data) # tokenize
+    rowNum <- which(sapply(trnslt$results,length)<3, arr.ind=TRUE) #returns row w/ missing body.
+        #Run fixRow function to insert NA in missing body column.
+        if(sum(rowNum, na.rm=TRUE)>0) {
+            z<-fixRow(trnslt$results) #R didn't want me to do this directly, so I assigned it to my BFF, z.
+            trnslt$results[[rowNum]] <- z}
     articles <- append(articles, unlist(trnslt$results))
     Sys.sleep(.1)
   }
@@ -47,11 +62,37 @@ for(j in 1:5){
   articles <- list()
 }
 
-#Create training sets of sections.
-articles_art_test <- articles_arts[sample(1:nrow(articles_arts),1000),]
-write.table(articles_art_test, "tab_del_arts_articles.txt", sep="\t")
+#Save text files of Section pulls.
+write.table(articles_Arts, file="articles_Arts.txt", sep="\t")
+write.table(articles_Business, file="articles_Business.txt", sep="\t")
+write.table(articles_Obituaries, file="articles_Obituaries.txt", sep="\t")
+write.table(articles_Sports, file="articles_Sports.txt", sep="\t")
+write.table(articles_World, file="articles_World.txt", sep="\t")
 
-articles_bus_test <- articles_bus[sample(1:nrow(articles_bus),1000),]
-articles_obit_test <- articles_obit[sample(1:nrow(articles_obit),1000),]
-articles_sprts_test <- articles_sprts[sample(1:nrow(articles_sprts),1000),]
-articles_wrld_test <- articles_wrld[sample(1:nrow(articles_wrld),1000),]
+#Create samples for training.
+articles_Arts_train <- articles_Arts[sample(1:nrow(articles_Arts),1000),]
+articles_Business_train <- articles_Business[sample(1:nrow(articles_Business),1000),]
+articles_Obituaries_train <- articles_Obituaries[sample(1:nrow(articles_Obituaries),1000),]
+articles_Sports_train <- articles_Sports[sample(1:nrow(articles_Sports),1000),]
+articles_World_train <- articles_World[sample(1:nrow(articles_World),1000),]
+
+#Save text files of training samples.
+write.table(articles_Arts_train, file="articles_Arts_train.txt", sep="\t")
+write.table(articles_Business_train, file="articles_Business_train.txt", sep="\t")
+write.table(articles_Obituaries_train, file="articles_Obituaries_train.txt", sep="\t")
+write.table(articles_Sports_train, file="articles_Sports_train.txt", sep="\t")
+write.table(articles_World_train, file="articles_World_train.txt", sep="\t")
+
+#Create samples for testing.
+articles_Arts_test <- articles_Arts[sample(1:nrow(articles_Arts),1000),]
+articles_Business_test <- articles_Business[sample(1:nrow(articles_Business),1000),]
+articles_Obituaries_test <- articles_Obituaries[sample(1:nrow(articles_Obituaries),1000),]
+articles_Sports_test <- articles_Sports[sample(1:nrow(articles_Sports),1000),]
+articles_World_test <- articles_World[sample(1:nrow(articles_World),1000),]
+
+#Save text files of training samples.
+write.table(articles_Arts_test, file="articles_Arts_test.txt", sep="\t")
+write.table(articles_Business_test, file="articles_Business_test.txt", sep="\t")
+write.table(articles_Obituaries_test, file="articles_Obituaries_test.txt", sep="\t")
+write.table(articles_Sports_test, file="articles_Sports_test.txt", sep="\t")
+write.table(articles_World_test, file="articles_World_test.txt", sep="\t")
