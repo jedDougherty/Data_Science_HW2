@@ -62,6 +62,15 @@ for(j in 1:5){
   articles <- list()
 }
 
+#Add descriptive row to each table. Not necessary but
+#makes this way way easier later.
+articles_Arts$newcol <- apply(articles_Arts,1,function(row) "Arts")
+articles_Business$newcol <- apply(articles_Business,1,function(row) "Business")
+articles_Obituaries$newcol <- apply(articles_Obituaries,1,function(row) "Obituaries")
+articles_Sports$newcol <- apply(articles_Sports,1,function(row) "Sports")
+articles_World$newcol <- apply(articles_World,1,function(row) "World")
+
+
 #Save text files of Section pulls.
 write.table(articles_Arts, file="articles_Arts.txt", sep="\t")
 write.table(articles_Business, file="articles_Business.txt", sep="\t")
@@ -70,7 +79,7 @@ write.table(articles_Sports, file="articles_Sports.txt", sep="\t")
 write.table(articles_World, file="articles_World.txt", sep="\t")
 
 #Create samples for training.
-articles_Arts_train <- articles_Arts[sample(1:nrow(articles_Arts),1000),]
+
 articles_Business_train <- articles_Business[sample(1:nrow(articles_Business),1000),]
 articles_Obituaries_train <- articles_Obituaries[sample(1:nrow(articles_Obituaries),1000),]
 articles_Sports_train <- articles_Sports[sample(1:nrow(articles_Sports),1000),]
