@@ -28,14 +28,19 @@ trainmatrix <- create_matrix(cbind(train["X1"],train["X2"]), language="english",
 #Creates the test matrix with the listed specifications
 
 testmatrix <- create_matrix(cbind(test["X1"],test["X2"]), language="english",
-                             removeNumbers=TRUE, removePunctuation=TRUE, 
+                             removeNumbers=TRUE, removePunctuation=TRUE, removeStopwords=TRUE
                              stemWords=TRUE, removeSparseTerms = .998)
 
 #Creates a little test matrix
 
 little_test_matrix <- create_matrix(cbind(littletest["X1"],littletest["X2"]), language="english",
-                                    removeNumbers=TRUE, removePunctuation=TRUE, 
+                                    removeNumbers=TRUE, removePunctuation=TRUE,
                                     stemWords=TRUE, removeSparseTerms = .998)
+
+little_t <- tm_map(littletest, removeWords, stopw) 
+
+stopw <- read.table("http://jakehofman.com/ddm/wp-content/uploads/2012/03/stopwords.txt",header=F)
+little_test_matrix <- little_test_matrix[!colnames(little_test_matrix) %in% stopw$V1]
 
 #This trains the model using Naive Bayes and 5000 test rows.
 model <- naiveBayes(as.matrix(trainmatrix),as.factor(train$newcol));

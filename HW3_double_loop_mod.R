@@ -43,10 +43,16 @@ for(j in 1:5){
     Sys.sleep(.1)
   }
   assign(paste("articles_",facets[[j]],sep=""),data.frame(matrix(unlist(articles), nrow=2000,byrow=T))) 
+  
   rm(articles)
   articles <- list()
 }
-
+#Add descriptive row to articles
+articles_Arts$newcol <- apply(articles_Arts,1,function(row) "Arts")
+articles_Business$newcol <- apply(articles_Business,1,function(row) "Business")
+articles_Obituaries$newcol <- apply(articles_Obituaries,1,function(row) "Obituaries")
+articles_Sports$newcol <- apply(articles_Sports,1,function(row) "Sports")
+articles_World$newcol <- apply(articles_World,1,function(row) "World")
 #Create training sets of sections.
 articles_art_test <- articles_arts[sample(1:nrow(articles_arts),1000),]
 write.table(articles_art_test, "tab_del_arts_articles.txt", sep="\t")
