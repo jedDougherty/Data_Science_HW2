@@ -62,16 +62,21 @@ View(comparison_table)
 colnames(input.matrix.normalized) = c("Arts", "Business", "Obituaries", "Sports", "World News")
 rownames(input.matrix.normalized) = colnames(input.matrix.normalized)
 
-#Turns the table to a data frame
-confusion <- as.data.frame(prop.table(table(results,littletest$newcol),1))
-
-#plots the data frame
-plot <- ggplot(confusion)
+#Turns the table to various data frames
+#this one is the raw table numbers
+confusion <-as.data.frame(table(results,littletest$newcol))
+#this one is normalized based on the number of projections in each category
+confusion_normalized_projected <- as.data.frame(prop.table(table(results,littletest$newcol),1))
+#this one is normalized based on the actual number in each category
+confusion_normalized_actual <- as.data.frame(prop.table(table(results,littletest$newcol),2))
+#plots the data frame, in this case for confusion_normalized_projected
+for(i in 1:3){
+plot <- ggplot(confusion_normalized_projected)
 plot + geom_tile(aes(x=Var2, y=results, fill=Freq)) + scale_x_discrete(name="Actual Class") + 
   scale_y_discrete(name="Predicted Class") +
-  scale_fill_gradient(breaks=seq(from=-.5, to=4, by=.2)) + 
+  scale_fill_gradient(breaks=seq(from=-0, to=.8, by=.1)) + 
   labs(fill="Normalized\nFrequency")
-
+}
 
 #We can use this matrix to do other predictions with RTextTools. 
 #If we want to do predictions withs stuff other than Naive Bayes.
