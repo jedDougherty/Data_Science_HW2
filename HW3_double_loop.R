@@ -79,7 +79,7 @@ write.table(articles_Sports, file="articles_Sports.txt", sep="\t")
 write.table(articles_World, file="articles_World.txt", sep="\t")
 
 #Create samples for training.
-
+articles_Arts_train <- articles_Arts[sample(1:nrow(articles_Arts),1000),]
 articles_Business_train <- articles_Business[sample(1:nrow(articles_Business),1000),]
 articles_Obituaries_train <- articles_Obituaries[sample(1:nrow(articles_Obituaries),1000),]
 articles_Sports_train <- articles_Sports[sample(1:nrow(articles_Sports),1000),]
