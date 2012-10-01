@@ -22,7 +22,7 @@ littletest <- test[t,]
 
 #Creates the training matrix with the listed specifications
 trainmatrix <- create_matrix(cbind(train["X1"],train["X2"]), language="english",
-                             removeNumbers=TRUE, removePunctuation=TRUE,removeStopwords=TRUE
+                             removeNumbers=TRUE, removePunctuation=TRUE,removeStopwords=TRUE,
                              stemWords=TRUE, removeSparseTerms = .998)
 
 #Creates the test matrix with the listed specifications
@@ -42,7 +42,7 @@ model <- naiveBayes(as.matrix(trainmatrix),as.factor(train$newcol),laplace=0);
 #To run for full results instead of the small set, rename 
 #little_test_matrix to testmatrix
 #WARNING THIS TAKES A LONG TIME AND MAKES YOUR COMPUTER GET REALLY HOT
-detailed_results <- predict(model,as.matrix(testmatrix),type="raw");
+#detailed_results <- predict(model,as.matrix(testmatrix),type="raw");
 
 #This provides only the most likely section for each row of your data
 results <- predict(model,as.matrix(testmatrix));

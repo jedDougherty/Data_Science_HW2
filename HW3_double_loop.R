@@ -70,7 +70,29 @@ articles_Obituaries$newcol <- apply(articles_Obituaries,1,function(row) "Obituar
 articles_Sports$newcol <- apply(articles_Sports,1,function(row) "Sports")
 articles_World$newcol <- apply(articles_World,1,function(row) "World")
 
-###########################
+#Combines the articles into one table.
+#We need to do this because we are training the 
+#machine to compare articles to eachother.
+articles_All <- rbind(articles_Arts,articles_Business,
+                      articles_Obituaries,articles_Sports,articles_World)
+stopw <- read.table("http://jakehofman.com/ddm/wp-content/uploads/2012/03/stopwords.txt",header=F)
+stopw <- t(stopw)
+#Remove punctuation and numbers from articles_All
+articles_All$X1 <- tolower(articles_All$X1)
+articles_All$X2 <- tolower(articles_All$X2)
+articles_All$X1 <- gsub("[[:punct:]]", "", articles_All$X1)
+articles_All$X2 <- gsub("[[:punct:]]", "", articles_All$X2)
+articles_All$X1 <- gsub("\\d", "", articles_All$X1)
+articles_All$X2 <- gsub("\\d", "", articles_All$X2)
+articles_All$X1 <- gsub("ldquo", "", articles_All$X1)
+articles_All$X2 <- gsub("ldquo", "", articles_All$X2)
+for(i in 1:length(stopw)){
+  articles_All$X1 <- gsub(paste(" ",stopw[i]," ", sep="")," ",articles_All$X1)
+}
+for(i in 1:length(stopw)){
+  articles_All$X2 <- gsub(paste(" ",stopw[i]," ", sep="")," ",articles_All$X2)
+}
+############sto###############
 #No longer necessary
 ###########################
 
