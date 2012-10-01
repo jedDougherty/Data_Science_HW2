@@ -70,6 +70,9 @@ articles_Obituaries$newcol <- apply(articles_Obituaries,1,function(row) "Obituar
 articles_Sports$newcol <- apply(articles_Sports,1,function(row) "Sports")
 articles_World$newcol <- apply(articles_World,1,function(row) "World")
 
+###########################
+#No longer necessary
+###########################
 
 #Save text files of Section pulls.
 write.table(articles_Arts, file="articles_Arts.txt", sep="\t")
