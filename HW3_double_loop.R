@@ -5,6 +5,7 @@ install.packages("RJSONIO","foreach","plyr")
 require(RJSONIO)
 require(foreach)
 require(plyr)
+require(tm)
 #Define facets to search.
 facets=list("Arts","Business","Obituaries","Sports","World")
 queries <- list()
@@ -75,28 +76,77 @@ articles_World$newcol <- apply(articles_World,1,function(row) "World")
 #machine to compare articles to eachother.
 articles_All <- rbind(articles_Arts,articles_Business,
                       articles_Obituaries,articles_Sports,articles_World)
+
+names(articles_All) <- c("Body","Title","URL","Type")
+
+##########################################################################
+#Remove punctuation, stopwords, and numbers from articles_All
+##########################################################################
+#Read in Stopwords
+
 stopw <- read.table("http://jakehofman.com/ddm/wp-content/uploads/2012/03/stopwords.txt",header=F)
 stopw <- t(stopw)
-#Remove punctuation and numbers from articles_All
-articles_All$X1 <- tolower(articles_All$X1)
-articles_All$X2 <- tolower(articles_All$X2)
-articles_All$X1 <- gsub("[[:punct:]]", "", articles_All$X1)
-articles_All$X2 <- gsub("[[:punct:]]", "", articles_All$X2)
-articles_All$X1 <- gsub("\\d", "", articles_All$X1)
-articles_All$X2 <- gsub("\\d", "", articles_All$X2)
-articles_All$X1 <- gsub("ldquo", "", articles_All$X1)
-articles_All$X2 <- gsub("ldquo", "", articles_All$X2)
-articles_All$X1 <- gsub("quo ", " ", articles_All$X1)
-articles_All$X2 <- gsub("quo ", " ", articles_All$X2)
-articles_All$X1 <- gsub("quos ", " ", articles_All$X1)
-articles_All$X2 <- gsub("quos ", " ", articles_All$X2)
+
+#Subset, Text cleaning Body
+
+articles_All$Body <- tolower(articles_All$Body)
+articles_All$Body <- gsub("\\d", "", articles_All$Body)
+articles_All$Body <- gsub("ldquo", "", articles_All$Body)
+articles_All$Body <- gsub("quo ", " ", articles_All$Body)
+articles_All$Body <- gsub("quos ", " ", articles_All$Body)
 for(i in 1:length(stopw)){
-  articles_All$X1 <- gsub(paste(" ",stopw[i]," ", sep="")," ",articles_All$X1)
+  articles_All$Body <- gsub(paste(" ",stopw[i]," ", sep="")," ",articles_All$Body)
 }
+articles_All$Body <- gsub("[[:punct:]]", "", articles_All$Body)
+articles_All$Body <- stemDocument(articles_All$Body)
+articles_All$Body <- removeWords(articles_All$Body,stopwords("english"))
+
+#Subset, Text cleaning Titles
+
+articles_All$Title <- tolower(articles_All$Title)
+articles_All$Title <- gsub("\\d", "", articles_All$Title)
+articles_All$Title <- gsub("ldquo", "", articles_All$Title)
+articles_All$Title <- gsub("quo ", " ", articles_All$Title)
+articles_All$Title <- gsub("quos ", " ", articles_All$Title)
 for(i in 1:length(stopw)){
-  articles_All$X2 <- gsub(paste(" ",stopw[i]," ", sep="")," ",articles_All$X2)
+  articles_All$Title <- gsub(paste(" ",stopw[i]," ", sep="")," ",articles_All$Title)
 }
-############sto###############
+articles_All$Title <- gsub("[[:punct:]]", "", articles_All$Title)
+articles_All$Title <- stemDocument(articles_All$Title)
+articles_All$Title <- removeWords(articles_All$Title,stopwords("english"))
+
+#Creates a sparse matrix of the word counts in each article
+
+all_Corpus <- Corpus(VectorSource(paste(articles_All$Body,articles_All$Title,sep=" ")))
+all_dtm <- DocumentTermMatrix(all_Corpus)
+all_nosparse <- removeSparseTerms(all_dtm, 0.998)
+
+#Turns it into a regular matrix
+all_matrix <- as.matrix(all_nosparse)
+#converts it to a data frame
+all_df <- as.data.frame(all_matrix)
+all_df$newcolumn <- articles_All$Type
+#Splits the data.frame into random train and test variables
+
+s <- sample(10000, 5000)
+train <- all_df[s,] 
+test <- all_df[-s,]
+
+
+
+naive.worker <- function(dafr, alpha=1, beta=1, class="Section")
+{
+  holder <- train[which(train$newcolumn=="Arts"),1:(ncol(train)-1)]
+   
+  njc <-  colSums(holder)
+  njc <- as.matrix(njc)
+  nc <- nrow(holder)
+}
+
+
+t_mat <- train[which(row.names(train)=="Sports"),]
+View(train)
+############################
 #No longer necessary
 ###########################
 
