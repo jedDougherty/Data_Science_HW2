@@ -119,6 +119,7 @@ articles_All$Title <- removeWords(articles_All$Title,stopwords("english"))
 
 all_Corpus <- Corpus(VectorSource(paste(articles_All$Body,articles_All$Title,sep=" ")))
 all_dtm <- DocumentTermMatrix(all_Corpus)
+all_dtm <- weightBin(all_dtm)
 all_nosparse <- removeSparseTerms(all_dtm, 0.998)
 
 #Turns it into a regular matrix
@@ -132,21 +133,75 @@ s <- sample(10000, 5000)
 train <- all_df[s,] 
 test <- all_df[-s,]
 
+train$newcolumn <- as.factor(train$newcolumn)
+test_correct <- as.factor(test$newcolumn)
+test <- test[,!(names(test) %in% "newcolumn")]
+names(test)
 
-
-naive.worker <- function(dafr, alpha=1, beta=1, class="Section")
+##################
+#Train Naive Bayes Classifier
+##################
+naive.worker <- function(data, class)
 {
-  holder <- train[which(train$newcolumn=="Arts"),1:(ncol(train)-1)]
-   
-  njc <-  colSums(holder)
-  njc <- as.matrix(njc)
-  nc <- nrow(holder)
+  holder <- data[which(data$newcolumn==class),1:(ncol(data)-1)]
 }
 
+naive.slave <- function(data, class)
+{
+  holder <- data[which(data$newcolumn!=class),1:(ncol(data)-1)]
+}
 
-t_mat <- train[which(row.names(train)=="Sports"),]
-View(train)
-############################
+train_art <- naive.worker(train,"Arts")
+prior_art <- nrow(train_art)/nrow(train)
+counts_art <- colSums(train_art)
+
+art_slave <- naive.slave(train,"Arts")
+counts_art_slave <- colSums(art_slave)
+
+train_business <- naive.worker(train,"Business")
+prior_business <- nrow(train_business)/nrow(train)
+counts_business <- colSums(train_business)
+
+bus_slave <- naive.slave(train,"Business")
+counts_bus_slave <- colSums(bus_slave)
+
+train_obit <- naive.worker(train,"Obituaries")
+prior_obit<- nrow(train_obit)/nrow(train)
+counts_obit <- colSums(train_obit)
+
+obit_slave <- naive.slave(train,"Obituaries")
+counts_obit_slave <- colSums(obit_slave)
+
+train_sports <- naive.worker(train,"Sports")
+prior_sports <- nrow(train_sports)/nrow(train)
+counts_sports <- colSums(train_sports)
+
+sports_slave <- naive.slave(train,"Sports")
+counts_sports_slave <- colSums(sports_slave)
+
+train_world <- naive.worker(train,"World")
+prior_world <- nrow(train_world)/nrow(train)
+counts_world <- colSums(train_world)
+
+world_slave <- naive.slave(train,"World")
+counts_world_slave <- colSums(world_slave)
+
+priors <- c(prior_art,prior_business,prior_obit,prior_sports,prior_world)
+sums <- c(nrow(train_art),nrow(train_business),nrow(train_obit),nrow(train_sports),nrow(train_world))
+counts <- data.frame(counts_art,counts_business,counts_obit,counts_sports,counts_world)
+probs <- (counts+1)/(sums+2)#Add alpha and beta here in the form (counts + Alpha-1)/(sums + alpha + beta-2)
+
+slave_sums <- c(nrow(art_slave),nrow(bus_slave),nrow(obit_slave),nrow(sports_slave),nrow(world_slave))
+slave_counts <- data.frame(counts_art_slave,counts_bus_slave,counts_obit_slave,counts_sports_slave,counts_world_slave)
+slave_probs <- (slave_counts+1)/(slave_sums+2)#Add alpha and beta here in the form (counts + Alpha-1)/(sums + alpha + beta-2)
+
+##############
+#Test Bayes
+##############
+log_arts <- rowSums(test*(log((probs$counts_art*(1-slave_probs$counts_art_slave))/(slave_probs$counts_art_slave*(1-probs$counts_art)))))
+log_else <- log((1-probs$counts_art)/(1-slave_probs$counts_art_slave)) +log(priors[1]/(1-priors[1]))
+log_odds_arts <- log_arts + log_else
+#####################
 #No longer necessary
 ###########################
 
