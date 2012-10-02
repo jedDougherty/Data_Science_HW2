@@ -88,6 +88,8 @@ articles_All$X1 <- gsub("ldquo", "", articles_All$X1)
 articles_All$X2 <- gsub("ldquo", "", articles_All$X2)
 articles_All$X1 <- gsub("quo ", " ", articles_All$X1)
 articles_All$X2 <- gsub("quo ", " ", articles_All$X2)
+articles_All$X1 <- gsub("quos ", " ", articles_All$X1)
+articles_All$X2 <- gsub("quos ", " ", articles_All$X2)
 for(i in 1:length(stopw)){
   articles_All$X1 <- gsub(paste(" ",stopw[i]," ", sep="")," ",articles_All$X1)
 }
