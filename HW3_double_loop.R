@@ -256,3 +256,60 @@ plot + geom_tile(aes(x=actual, y=predicted, fill=Freq)) + scale_x_discrete(name=
   labs(fill="Frequency")
 dev.off()
 
+#Determining the most important words in each type of article
+
+art_sort <- head(probs[order(-probs$counts_art),],10)
+bus_sort <- head(probs[order(-probs$counts_bus),],10)
+obi_sort <- head(probs[order(-probs$counts_obit),],10)
+spo_sort <- head(probs[order(-probs$counts_sports),],10)
+wor_sort <- head(probs[order(-probs$counts_world),],10)
+
+postscript(file="world_count.eps", #Save graph to EPS file.
+           onefile=FALSE, 
+           width=12,
+           height=9,
+           horizontal=FALSE)
+
+plot(art_sort[,1],col="red",type="l", ylim=c(0,1))
+lines(bus_sort[,2],col="blue",type="l")
+lines(obi_sort[,3],col="black",type="l")
+lines(spo_sort[,4],col="forest green",type="l")
+lines(wor_sort[,5],col="purple",type="l")
+
+dev.off()
+
+tops <- data.frame(row.names(art_sort),row.names(bus_sort),row.names(obi_sort),row.names(spo_sort),row.names(wor_sort))
+names(tops) <- c("Arts Top Words","Business Top Words","Obituaries Top Words","Sports Top Words","World Top Words")
+tops
+
+test_variances <- apply(test_set,1,var)
+test_variances <- data.frame(test_variances,group$predicted)
+t_v <- test_variances
+t_v$newcol <- as.numeric(row.names(t_v))
+names(t_v) <- c("variance","predicted","art_num")
+var_sort <- head(t_v[order(t_v$variance),],10)
+names(var_sort)
+clean_arts <- rbind(articles_Arts,articles_Business,
+      articles_Obituaries,articles_Sports,articles_World)
+names(clean_arts) <- c("Body","Title","URL","Type")
+clean_arts$newcol <- as.numeric(row.names(clean_arts))
+names(clean_arts)
+for a
+one <- subset(clean_arts,clean_arts$newcol==9957,Select = c(Type,Body,Title))
+two <- subset(clean_arts,clean_arts$newcol==8491,Select = c(Type,Body,Title))
+three <- subset(clean_arts,clean_arts$newcol==5233,Select = c(Type,Body,Title))
+four <- subset(clean_arts,clean_arts$newcol==9877,Select = c(Type,Body,Title))
+five <- subset(clean_arts,clean_arts$newcol==3406,Select = c(Type,Body,Title))
+six <- subset(clean_arts,clean_arts$newcol==4060,Select = c(Type,Body,Title))
+seven <- subset(clean_arts,clean_arts$newcol==7880,Select = c(Type,Body,Title))
+eight <- subset(clean_arts,clean_arts$newcol==6448,Select = c(Type,Body,Title))
+nine <- subset(clean_arts,clean_arts$newcol==2680,Select = c(Type,Body,Title))
+ten <- subset(clean_arts,clean_arts$newcol==9548,Select = c(Type,Body,Title))
+
+diff_arts <- rbind(one,two,three,four,five,six,seven,eight,nine,ten)
+diff_arts <- cbind(diff_arts,var_sort)
+names(diff_arts)
+
+completed_diff_articles <- data.frame(diff_arts$art_num,diff_arts$predicted,diff_arts$Type,diff_arts$Title,diff_arts$variance)
+View(completed_diff_articles)
+write.table(completed_diff_articles, "hardest_arts", sep="\t")
