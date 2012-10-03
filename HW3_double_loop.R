@@ -6,6 +6,11 @@ require(RJSONIO)
 require(foreach)
 require(plyr)
 require(tm)
+library('RTextTools')
+library('e1071');
+library('SparseM');
+library('tm');
+library('ggplot2');
 #Define facets to search.
 facets=list("Arts","Business","Obituaries","Sports","World")
 queries <- list()
@@ -98,7 +103,6 @@ for(i in 1:length(stopw)){
   articles_All$Body <- gsub(paste(" ",stopw[i]," ", sep="")," ",articles_All$Body)
 }
 articles_All$Body <- gsub("[[:punct:]]", "", articles_All$Body)
-articles_All$Body <- stemDocument(articles_All$Body)
 articles_All$Body <- removeWords(articles_All$Body,stopwords("english"))
 
 #Subset, Text cleaning Titles
@@ -112,15 +116,14 @@ for(i in 1:length(stopw)){
   articles_All$Title <- gsub(paste(" ",stopw[i]," ", sep="")," ",articles_All$Title)
 }
 articles_All$Title <- gsub("[[:punct:]]", "", articles_All$Title)
-articles_All$Title <- stemDocument(articles_All$Title)
 articles_All$Title <- removeWords(articles_All$Title,stopwords("english"))
 
 #Creates a sparse matrix of the word counts in each article
 
 all_Corpus <- Corpus(VectorSource(paste(articles_All$Body,articles_All$Title,sep=" ")))
 all_dtm <- DocumentTermMatrix(all_Corpus)
-all_dtm <- weightBin(all_dtm)
-all_nosparse <- removeSparseTerms(all_dtm, 0.998)
+all_dtm <- weightBin(all_dtm)#Makes the matrix Binary
+all_nosparse <- removeSparseTerms(all_dtm, 0.995)
 
 #Turns it into a regular matrix
 all_matrix <- as.matrix(all_nosparse)
@@ -134,6 +137,8 @@ train <- all_df[s,]
 test <- all_df[-s,]
 
 train$newcolumn <- as.factor(train$newcolumn)
+
+#Creates a vector of the correct test categories
 test_correct <- as.factor(test$newcolumn)
 test <- test[,!(names(test) %in% "newcolumn")]
 names(test)
@@ -189,53 +194,65 @@ counts_world_slave <- colSums(world_slave)
 priors <- c(prior_art,prior_business,prior_obit,prior_sports,prior_world)
 sums <- c(nrow(train_art),nrow(train_business),nrow(train_obit),nrow(train_sports),nrow(train_world))
 counts <- data.frame(counts_art,counts_business,counts_obit,counts_sports,counts_world)
-probs <- (counts+1)/(sums+2)#Add alpha and beta here in the form (counts + Alpha-1)/(sums + alpha + beta-2)
+probs <- (counts+1)/(sums+5)#Add alpha and beta here in the form (counts + Alpha-1)/(sums + alpha + beta-2)
 
 slave_sums <- c(nrow(art_slave),nrow(bus_slave),nrow(obit_slave),nrow(sports_slave),nrow(world_slave))
 slave_counts <- data.frame(counts_art_slave,counts_bus_slave,counts_obit_slave,counts_sports_slave,counts_world_slave)
-slave_probs <- (slave_counts+1)/(slave_sums+2)#Add alpha and beta here in the form (counts + Alpha-1)/(sums + alpha + beta-2)
+slave_probs <- (slave_counts+1)/(slave_sums+5)#Add alpha and beta here in the form (counts + Alpha-1)/(sums + alpha + beta-2)
 
 ##############
 #Test Bayes
-##############
-log_arts <- rowSums(test*(log((probs$counts_art*(1-slave_probs$counts_art_slave))/(slave_probs$counts_art_slave*(1-probs$counts_art)))))
-log_else <- log((1-probs$counts_art)/(1-slave_probs$counts_art_slave)) +log(priors[1]/(1-priors[1]))
-log_odds_arts <- log_arts + log_else
-#####################
-#No longer necessary
-###########################
+##############(1-probs$counts_bus)
 
-#Save text files of Section pulls.
-write.table(articles_Arts, file="articles_Arts.txt", sep="\t")
-write.table(articles_Business, file="articles_Business.txt", sep="\t")
-write.table(articles_Obituaries, file="articles_Obituaries.txt", sep="\t")
-write.table(articles_Sports, file="articles_Sports.txt", sep="\t")
-write.table(articles_World, file="articles_World.txt", sep="\t")
+weights <- function(x,y){
+              weight <- log((x*(1-y))/((y)*(1-x)))
+              return(weight)
+}
 
-#Create samples for training.
-articles_Arts_train <- articles_Arts[sample(1:nrow(articles_Arts),1000),]
-articles_Business_train <- articles_Business[sample(1:nrow(articles_Business),1000),]
-articles_Obituaries_train <- articles_Obituaries[sample(1:nrow(articles_Obituaries),1000),]
-articles_Sports_train <- articles_Sports[sample(1:nrow(articles_Sports),1000),]
-articles_World_train <- articles_World[sample(1:nrow(articles_World),1000),]
+bias <- function(x,y){
+              the_bias <- log((1-x)/(1-y)) 
+              return(the_bias)
+}
 
-#Save text files of training samples.
-write.table(articles_Arts_train, file="articles_Arts_train.txt", sep="\t")
-write.table(articles_Business_train, file="articles_Business_train.txt", sep="\t")
-write.table(articles_Obituaries_train, file="articles_Obituaries_train.txt", sep="\t")
-write.table(articles_Sports_train, file="articles_Sports_train.txt", sep="\t")
-write.table(articles_World_train, file="articles_World_train.txt", sep="\t")
+final <- function(u){
+              final <- log(u/(1-u))
+              return(final)              
+                    }
+#create log odds for each section
+log_odds_arts <-as.matrix(test)%*%as.matrix(weights(probs$counts_art,slave_probs$counts_art_slave))+sum(bias(probs$counts_art,slave_probs$counts_art_slave))+sum(final(priors[1]))
+log_odds_bus <-as.matrix(test)%*%as.matrix(weights(probs$counts_bus,slave_probs$counts_bus_slave))+sum(bias(probs$counts_bus,slave_probs$counts_bus_slave))+sum(final(priors[2]))
+log_odds_obit <-as.matrix(test)%*%as.matrix(weights(probs$counts_obit,slave_probs$counts_obit_slave))+sum(bias(probs$counts_obit,slave_probs$counts_obit_slave))+sum(final(priors[3]))
+log_odds_sports <-as.matrix(test)%*%as.matrix(weights(probs$counts_sports,slave_probs$counts_sports_slave))+sum(bias(probs$counts_sports,slave_probs$counts_sports_slave))+sum(final(priors[4]))
+log_odds_world <-as.matrix(test)%*%as.matrix(weights(probs$counts_world,slave_probs$counts_world_slave))+sum(bias(probs$counts_world,slave_probs$counts_world_slave))+sum(final(priors[5]))
 
-#Create samples for testing.
-articles_Arts_test <- articles_Arts[sample(1:nrow(articles_Arts),1000),]
-articles_Business_test <- articles_Business[sample(1:nrow(articles_Business),1000),]
-articles_Obituaries_test <- articles_Obituaries[sample(1:nrow(articles_Obituaries),1000),]
-articles_Sports_test <- articles_Sports[sample(1:nrow(articles_Sports),1000),]
-articles_World_test <- articles_World[sample(1:nrow(articles_World),1000),]
+#combine to create dataframe with probabilities for each section
+test_set <- data.frame(log_odds_arts,log_odds_bus,log_odds_obit,log_odds_sports,log_odds_world)
+names(test_set) <- c("Arts","Business","Obituaries","Sports","World")
 
-#Save text files of training samples.
-write.table(articles_Arts_test, file="articles_Arts_test.txt", sep="\t")
-write.table(articles_Business_test, file="articles_Business_test.txt", sep="\t")
-write.table(articles_Obituaries_test, file="articles_Obituaries_test.txt", sep="\t")
-write.table(articles_Sports_test, file="articles_Sports_test.txt", sep="\t")
-write.table(articles_World_test, file="articles_World_test.txt", sep="\t")
+#Find the max probability for each document
+solution <- names(test_set)[apply(test_set,1,which.max)]
+group <- data.frame(solution,test_correct)
+names(group) <- c("predicted","actual")
+#create a confusion table
+confusion<-table(group)
+draw <- as.data.frame(confusion)
+
+
+
+colnames(input.matrix.normalized) = c("Arts", "Business", "Obituaries", "Sports", "World")
+rownames(input.matrix.normalized) = colnames(input.matrix.normalized)
+postscript(file="Confusion_nhood.eps", #Save graph to EPS file.
+           onefile=FALSE, 
+           width=12,
+           height=9,
+           horizontal=FALSE)
+
+plot <- ggplot(draw)
+plot + geom_tile(aes(x=actual, y=predicted, fill=Freq)) + scale_x_discrete(name="Actual Class") + 
+  scale_y_discrete(name="Predicted Class") +
+  scale_fill_gradient(breaks=seq(from=-0, to=1000, by=100),
+                      low="lightgray",
+                      high="blue") + 
+  labs(fill="Frequency")
+dev.off()
+
