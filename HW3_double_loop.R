@@ -202,7 +202,7 @@ slave_probs <- (slave_counts+1)/(slave_sums+5)#Add alpha and beta here in the fo
 
 ##############
 #Test Bayes
-##############(1-probs$counts_bus)
+##############
 
 weights <- function(x,y){
               weight <- log((x*(1-y))/((y)*(1-x)))
@@ -236,7 +236,6 @@ names(group) <- c("predicted","actual")
 #create a confusion table
 confusion<-table(group)
 draw <- as.data.frame(confusion)
-
 
 
 colnames(input.matrix.normalized) = c("Arts", "Business", "Obituaries", "Sports", "World")
